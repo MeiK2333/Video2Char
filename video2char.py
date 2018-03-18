@@ -49,14 +49,37 @@ def image2char(image, width, height, charset):
     image = image.convert('L').resize((width, height))
     pix = image.load()
 
-    pic_set = []
+    char_set = []
 
     for i in range(height):
         for j in range(width):
             char = charset[pix[j, i]]
-            pic_set.append(char)
-        pic_set.append('\r\n')
-    return ''.join(pic_set)
+            char_set.append(char)
+        char_set.append('\r\n')
+    return ''.join(char_set)
+
+
+def gif2char(gif, width, height, charset, frame):
+    gif = Image.open(gif)
+    gif.seek(1)
+
+    char_set = []
+    count = 0
+
+    try:
+        while True:
+            char_set.append(CHAR_TEMP % image2char(gif, width, height, charset))
+            if count % frame == 0:
+                print('生成 %d S 字符画' % (count / frame))
+            count += 1
+            gif.seek(gif.tell() + 1)
+    except EOFError:
+        return ''.join(char_set)
+
+
+def video2gif(video, width, height, frame):
+    os.system('ffmpeg -i %s -s %d*%d -r %d %s.gif' %
+              (video, width, height, frame, video))
 
 
 if __name__ == '__main__':
@@ -67,6 +90,8 @@ if __name__ == '__main__':
     width = data['width']
     height = data['height']
     frame = 1000 // data['frame']
-    char = image2char(image, width, height, charset)
-    with open('test.html', 'w') as fr:
-        fr.write(JAVASCRIPT % frame + STYLE + CHAR_TEMP % char)
+    file = data['file']
+    video2gif(file, width, height, frame)
+    char = gif2char(file + '.gif', width, height, charset, frame)
+    with open(file + '.html', 'w') as fr:
+        fr.write(JAVASCRIPT % frame + STYLE + char)
