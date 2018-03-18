@@ -3,31 +3,22 @@ import os
 import json
 from PIL import Image
 
-STYLE = '<style>pre{font-size: 10px;line-height: 6px;}</style>\r\n'
-CHAR_TEMP = '<pre>\r\n%s</pre>'
+STYLE = '<style>pre{font-size: 10px;line-height: 7px;}</style>\r\n'
+CHAR_TEMP = '<pre style="display:none">\r\n%s</pre>'
 JAVASCRIPT = '''<script>
-window.onload = function() {
-    var frames = document.getElementsByTagName('pre');
-    var length = frames.length;
-    var current = 0;
-    for (var i = 1; i < length; i++) {
-        frames[i].style.display = 'none';
+    var body;
+    var first;
+    var init = function() {
+        body = document.getElementsByTagName("body")[0];
+        first = body.firstChild;
     }
     var doframe = function() {
-        if (length <= 1)
-            return;
-        frames[current].style.display = 'block';
-        if (current > 0)
-            frames[current - 1].style.display = 'none';
-        else
-            frames[length - 1].style.display = 'none';
-        if (current < length - 1)
-            current = current + 1;
-        else
-            current = 0;
+        body.removeChild(first);
+        first = body.firstChild;
+        first.style.display = 'block';
     }
-    setInterval(doframe, %d);
-}
+    setTimeout(init, 1);
+    setInterval(doframe, 100);
 </script>'''
 
 
@@ -59,7 +50,7 @@ def image2char(image, width, height, charset):
     return ''.join(char_set)
 
 
-def gif2char(gif, width, height, charset, frame):
+def gif2char(gif, width, height, charset):
     gif = Image.open(gif)
     gif.seek(1)
 
@@ -69,17 +60,17 @@ def gif2char(gif, width, height, charset, frame):
     try:
         while True:
             char_set.append(CHAR_TEMP % image2char(gif, width, height, charset))
-            if count % frame == 0:
-                print('生成 %d S 字符画' % (count / frame))
+            if count % 10 == 0:
+                print('生成 %d S 字符画' % (count / 10))
             count += 1
             gif.seek(gif.tell() + 1)
     except EOFError:
         return ''.join(char_set)
 
 
-def video2gif(video, width, height, frame):
-    os.system('ffmpeg -i %s -s %d*%d -r %d %s.gif' %
-              (video, width, height, frame, video))
+def video2gif(video, width, height):
+    os.system('ffmpeg -i %s -s %d*%d -r 10 %s.gif' %
+              (video, width, height, video))
 
 
 if __name__ == '__main__':
@@ -89,9 +80,8 @@ if __name__ == '__main__':
     charset = charset256(data['charset'])
     width = data['width']
     height = data['height']
-    frame = 1000 // data['frame']
     file = data['file']
-    video2gif(file, width, height, frame)
-    char = gif2char(file + '.gif', width, height, charset, frame)
+    video2gif(file, width, height)
+    char = gif2char(file + '.gif', width, height, charset)
     with open(file + '.html', 'w') as fr:
-        fr.write(JAVASCRIPT % frame + STYLE + char)
+        fr.write(JAVASCRIPT + STYLE + char)
