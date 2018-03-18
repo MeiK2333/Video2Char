@@ -76,7 +76,6 @@ def video2gif(video, width, height):
 if __name__ == '__main__':
     with open('config.json') as fr:
         data = json.loads(fr.read())
-    image = Image.open('test.jpg')
     charset = charset256(data['charset'])
     width = data['width']
     height = data['height']
