@@ -4,7 +4,32 @@ import json
 from PIL import Image
 
 STYLE = '<style>pre{font-size: 10px;line-height: 6px;}</style>\r\n'
-CHAR_TEMP = '<pre>\r\n{}</pre>'
+CHAR_TEMP = '<pre>\r\n%s</pre>'
+JAVASCRIPT = '''<script>
+window.onload = function() {
+    var frames = document.getElementsByTagName('pre');
+    var length = frames.length;
+    var current = 0;
+    for (var i = 1; i < length; i++) {
+        frames[i].style.display = 'none';
+    }
+    var doframe = function() {
+        if (length <= 1)
+            return;
+        frames[current].style.display = 'block';
+        if (current > 0)
+            frames[current - 1].style.display = 'none';
+        else
+            frames[length - 1].style.display = 'none';
+        if (current < length - 1)
+            current = current + 1;
+        else
+            current = 0;
+    }
+    setInterval(doframe, %d);
+}
+</script>'''
+
 
 def charset256(charset):
     charset_len = len(charset)
@@ -41,6 +66,7 @@ if __name__ == '__main__':
     charset = charset256(data['charset'])
     width = data['width']
     height = data['height']
+    frame = 1000 // data['frame']
     char = image2char(image, width, height, charset)
     with open('test.html', 'w') as fr:
-        fr.write(STYLE + CHAR_TEMP.format(char))
+        fr.write(JAVASCRIPT % frame + STYLE + CHAR_TEMP % char)

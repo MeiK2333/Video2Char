@@ -1,4 +1,27 @@
-<style>pre{font-size: 10px;line-height: 6px;}</style>
+<script>
+window.onload = function() {
+    var frames = document.getElementsByTagName('pre');
+    var length = frames.length;
+    var current = 0;
+    for (var i = 1; i < length; i++) {
+        frames[i].style.display = 'none';
+    }
+    var doframe = function() {
+        if (length <= 1)
+            return;
+        frames[current].style.display = 'block';
+        if (current > 0)
+            frames[current - 1].style.display = 'none';
+        else
+            frames[length - 1].style.display = 'none';
+        if (current < length - 1)
+            current = current + 1;
+        else
+            current = 0;
+    }
+    setInterval(doframe, 100);
+}
+</script><style>pre{font-size: 10px;line-height: 6px;}</style>
 <pre>
                                                 ..        ..   . .GX5- :h9GAHHA9SS.        -sS9881-, :9H9-1S   .                
                                                           .    .-h3;  ,   r3XHBBG1       .sS8ABBHH3s.:AMXs:hi:                  
