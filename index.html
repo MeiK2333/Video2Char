@@ -1,74 +1,94 @@
 <html>
 
 <head>
-  <script src="/js/gifshot.min.js"></script>
   <script src="/js/libgif.min.js"></script>
+  <script src="/js/gifshot.min.js"></script>
+  <script src="/js/vue.min.js"></script>
 </head>
 
 <body>
-  <input type="file" onchange="previewFile()">
-  <video id="video" controls></video>
+  <div id="app">
+    <input type="file" @change="previewFile">
+    <video v-if="video.src" controls :src="video.src" @loadedmetadata="loaded"></video>
+    <template v-if="video.height">
+      <pre>
+height: <input v-model="video.height">
+width: <input v-model="video.width">
+duration: {{video.duration}}
+process rate: {{rate}} %
+      </pre>
+      <button @click="run" :disabled="running">开始制作</button>
+    </template>
+  </div>
 </body>
 
 <script>
-  function previewFile() {
-    var file = document.querySelector('input[type=file]').files[0];
-    var video = document.getElementById("video");
-    video.src = window.URL.createObjectURL(file);
-    video.addEventListener("loadedmetadata", function (e) {
-      var width = this.videoWidth,
-        height = this.videoHeight;
-        console.log(width);
-        console.log(height);
-        console.log(this.duration.toFixed(1));
-    }, false);
-  }
-  /*
-  var rub;
-  var cmd = {
-    "windows": "start",
-    "darwin": "open",
-    "linux": "xdg-open",
-  };
-  gifshot.createGIF({
-    gifWidth: 200,
-    gifHeight: 200,
-    video: [
-      'example/example.mp4',
-    ],
-    interval: 0.1,
-    numFrames: 100,
-    frameDuration: 1,
-    fontWeight: 'normal',
-    fontSize: '16px',
-    fontFamily: 'sans-serif',
-    fontColor: '#ffffff',
-    textAlign: 'center',
-    textBaseline: 'bottom',
-    sampleInterval: 10,
-    filter: 'grayscale(1)',
-    saveRenderingContexts: true,
-    numWorkers: 2,
-    progressCallback: (captureProgress) => {
-      console.log(captureProgress);
-    }
-  }, function (obj) {
-    if (!obj.error) {
-      delete obj.image;
-      for (const image of obj.savedRenderingContexts) {
-        var canvas = document.createElement("canvas");
-        canvas.width = 200;
-        canvas.height = 200;
-        var ctx = canvas.getContext("2d");
-        ctx.putImageData(image, 0, 0);
-
-        var img = document.createElement("img");
-        img.src = canvas.toDataURL("image/png");
-        document.body.appendChild(img);
+  var app = new Vue({
+    el: '#app',
+    data: {
+      file: null,
+      video: {
+        src: null,
+        height: null,
+        width: null,
+        duration: null,
+      },
+      rate: 0,
+      running: false,
+    },
+    methods: {
+      previewFile(event) {
+        this.file = event.target.files[0];
+        this.video.src = window.URL.createObjectURL(this.file);
+      },
+      loaded(event) {
+        const video = event.target;
+        this.video.height = video.videoHeight;
+        this.video.width = video.videoWidth;
+        this.video.duration = Math.floor(video.duration * 10);
+      },
+      run() {
+        this.running = true;
+        gifshot.createGIF({
+          gifWidth: this.video.width,
+          gifHeight: this.video.height,
+          video: this.file,
+          interval: 0.1,
+          numFrames: this.video.duration,
+          frameDuration: 1,
+          fontWeight: 'normal',
+          fontSize: '16px',
+          fontFamily: 'sans-serif',
+          fontColor: '#ffffff',
+          textAlign: 'center',
+          textBaseline: 'bottom',
+          sampleInterval: 10,
+          // filter: 'grayscale(1)',
+          saveRenderingContexts: true,
+          numWorkers: 2,
+          progressCallback: (captureProgress) => {
+            this.rate = (Number(captureProgress) * 100).toFixed(3);
+          }
+        },  (obj) => {
+          if (!obj.error) {
+            delete obj.image;
+            const canvas = document.createElement("canvas");
+            canvas.width = this.video.width;
+            canvas.height = this.video.height;
+            const ctx = canvas.getContext("2d");
+            for (const image of obj.savedRenderingContexts) {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.putImageData(image, 0, 0);
+              const img = document.createElement("img");
+              img.src = canvas.toDataURL("image/png");
+              document.body.appendChild(img);
+            }
+            this.running = false;
+          }
+        });
       }
     }
-  });
-  */
+  })
 </script>
 
 </html>
