@@ -21,6 +21,10 @@
       margin-top: 5px;
       margin-bottom: 5px;
     }
+
+    .center {
+      text-align: center;
+    }
   </style>
 </head>
 
@@ -44,15 +48,19 @@
           </div>
           <button class="btn btn-primary" @click="process"
             :disabled="running || !video.height || !video.width || !video.src || charset.length === 0">开始</button>
-          <button class="btn btn-primary" @click="end" :disabled="!running">结束</button>
+          <button class="btn btn-primary" @click="end" :disabled="!running">完成</button>
         </div>
 
         <div class="col-md-6">
           <video :src="video.src" @loadedmetadata="loaded" id="video" style="max-width: 100%;"></video>
         </div>
 
-        <div class="col-md-12">
+        <div class="col-md-12 center">
           <pre>{{frame}}</pre>
+        </div>
+        <div class="col-md-12 center">
+          <canvas>
+          </canvas>
         </div>
       </div>
     </div>
@@ -82,20 +90,20 @@
     },
     async mounted() {
       const constraints = {
-          video: true,
-          audio: false
-        };
-        let cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-        let video = document.getElementById('video');
-        if ("srcObject" in video) {
-          video.srcObject = cameraStream;
-        } else {
-          video.src = window.URL.createObjectURL(cameraStream);
-        }
-        this.video.src = cameraStream;
-        video.onloadedmetadata = function (e) {
-          video.play();
-        };
+        video: true,
+        audio: false
+      };
+      let cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+      let video = document.getElementById('video');
+      if ("srcObject" in video) {
+        video.srcObject = cameraStream;
+      } else {
+        video.src = window.URL.createObjectURL(cameraStream);
+      }
+      this.video.src = cameraStream;
+      video.onloadedmetadata = function (e) {
+        video.play();
+      };
     },
     methods: {
       async start() {
@@ -145,6 +153,17 @@
           }
           this.frame = frame.join('\n');
           this.frames.push(this.frame);
+          const canvas1 = document.querySelector('canvas');
+          canvas1.width = this.video.width * 7;
+          canvas1.height = this.video.height * 7;
+          const ctx1 = canvas1.getContext("2d");
+          ctx1.font = "10px monospace";
+          for (let i = 0; i < frame.length; i++) {
+            for (let j = 0; j < frame[i].length; j++) {
+            const text = frame[i][j];
+            ctx1.fillText(text, j * 7, 7 * i + 7);
+            }
+          }
           await sleep(100);
         }
         this.running = false;
