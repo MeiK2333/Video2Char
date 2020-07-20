@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+  <script src="js/v2c.js"></script>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
   <style>
     pre {
@@ -36,15 +37,15 @@
 
           <div class="form-group">
             <label>高度</label>
-            <input v-model="video.height" type="number" class="form-control">
+            <input v-model="video.height" type="number" class="form-control" :disabled="running">
           </div>
           <div class="form-group">
             <label>宽度</label>
-            <input v-model="video.width" type="number" class="form-control">
+            <input v-model="video.width" type="number" class="form-control" :disabled="running">
           </div>
           <div class="form-group">
             <label>字符集</label>
-            <textarea v-model="charset" type="text" class="form-control"></textarea>
+            <textarea v-model="charset" type="text" class="form-control" :disabled="running"></textarea>
           </div>
           <button class="btn btn-primary" @click="process"
             :disabled="running || !video.height || !video.width || !video.src || charset.length === 0">开始</button>
@@ -59,7 +60,7 @@
           <pre>{{frame}}</pre>
         </div>
         <div class="col-md-12 center">
-          <canvas>
+          <canvas id="canvas">
           </canvas>
         </div>
       </div>
@@ -86,7 +87,6 @@
       running: false,
       charset: '$@B%8&WM#*oahkbdpqwmzcvunxrjft/\\|()1{}[]?-_+~<>i!;:,\"^`\'. ',
       frame: '',
-      frames: [],
     },
     async mounted() {
       const constraints = {
@@ -107,7 +107,6 @@
     },
     methods: {
       async start() {
-
       },
       previewFile(event) {
         this.file = event.target.files[0];
@@ -124,46 +123,17 @@
       },
       async process() {
         this.running = true;
-        this.videoElem = document.getElementById('video');
-        this.videoElem.currentTime = 0;
-        const canvas = document.createElement('canvas');
-        canvas.width = this.video.width;
-        canvas.height = this.video.height;
-        const ctx = canvas.getContext('2d');
-        this.videoElem.play();
-        this.frames = [];
+        const videoElem = document.getElementById('video');
+        const canvasElem = document.getElementById('canvas');
+        canvasElem.width = this.video.width * 7;
+        canvasElem.height = this.video.height * 7;
+        const ctx = canvasElem.getContext('2d');
+        const v2cVideo = new V2CVideo(videoElem, this.video.width, this.video.height, this.charset);
         while (this.running) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(this.videoElem, 0, 0, canvas.width, canvas.height);
-          const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const frame = [];
-          let pos = 0;
-          for (let i = 0; i < image.height; i++) {
-            const line = [];
-            for (let j = 0; j < image.width; j++) {
-              const r = image.data[pos++];
-              const g = image.data[pos++];
-              const b = image.data[pos++];
-              const a = image.data[pos++];
-              const y = 0.299 * r + 0.587 * g + 0.114 * b;
-              const char = this.charset[Math.min(Math.ceil((y + 1) / Math.floor(256 / this.charset.length)), this.charset.length) - 1];
-              line.push(char);
-            }
-            frame.push(line.join(''));
-          }
-          this.frame = frame.join('\n');
-          this.frames.push(this.frame);
-          const canvas1 = document.querySelector('canvas');
-          canvas1.width = this.video.width * 7;
-          canvas1.height = this.video.height * 7;
-          const ctx1 = canvas1.getContext("2d");
-          ctx1.font = "10px monospace";
-          for (let i = 0; i < frame.length; i++) {
-            for (let j = 0; j < frame[i].length; j++) {
-            const text = frame[i][j];
-            ctx1.fillText(text, j * 7, 7 * i + 7);
-            }
-          }
+          const screenshot = v2cVideo.screenshot();
+          this.frame = screenshot.text;
+          ctx.clearRect(0, 0, canvasElem.width, canvasElem.height);
+          ctx.putImageData(screenshot.colorfulImage, 0, 0);
           await sleep(100);
         }
         this.running = false;

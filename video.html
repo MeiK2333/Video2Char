@@ -21,6 +21,10 @@
       margin-top: 5px;
       margin-bottom: 5px;
     }
+
+    .center {
+      text-align: center;
+    }
   </style>
 </head>
 
@@ -58,7 +62,7 @@
           <video v-if="video.src" :src="video.src" @loadedmetadata="loaded" id="video" style="max-width: 100%;"></video>
         </div>
 
-        <div class="col-md-12">
+        <div class="col-md-12 center">
           <pre>{{frame}}</pre>
         </div>
       </div>
