@@ -4,8 +4,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+  <script src="js/vue.js"></script>
+  <script type="text/javascript" src="js/omggif.js"></script>
+  <script src="js/v2c.js"></script>
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <title>视频转字符画</title>
   <style>
     pre {
       font-size: 10px;
@@ -43,19 +46,37 @@
 
           <div class="form-group">
             <label>高度</label>
-            <input v-model="video.height" type="number" :disabled="running" class="form-control">
+            <input v-model="video.height" type="number" :disabled="running" class="form-control" min="1" max="240">
           </div>
           <div class="form-group">
             <label>宽度</label>
-            <input v-model="video.width" type="number" :disabled="running" class="form-control">
+            <input v-model="video.width" type="number" :disabled="running" class="form-control" min="1" max="480">
           </div>
           <div class="form-group">
             <label>字符集</label>
-            <textarea v-model="charset" type="text" class="form-control"></textarea>
+            <textarea v-model="charset" type="text" class="form-control" :disabled="running"></textarea>
+          </div>
+          <div class="form-group form-check">
+            <input class="form-check-input" type="checkbox" v-model="gray" :disabled="running">
+            <label class="form-check-label">
+              灰度 GIF 输出
+            </label>
+          </div>
+          <div class="form-group form-check">
+            <input class="form-check-input" type="checkbox" v-model="colorful" :disabled="running">
+            <label class="form-check-label">
+              彩色 GIF 输出
+            </label>
           </div>
           <button class="btn btn-primary" @click="process"
             :disabled="running || !video.height || !video.width || !video.src || charset.length === 0">开始</button>
-          <button class="btn btn-primary" @click="download" :disabled="frames == 0 || running">下载</button>
+          <button class="btn btn-primary" @click="end" :disabled="!running">完成</button>
+          <button class="btn btn-primary" @click="downloadText" :disabled="texts.length === 0 || running">下载
+            HTML</button>
+          <button class="btn btn-primary" @click="downloadGray" :disabled="texts.length === 0 || running"
+            v-if="gray">下载灰度 GIF</button>
+          <button class="btn btn-primary" @click="downloadText" :disabled="texts.length === 0 || running"
+            v-if="colorful">下载彩色 GIF</button>
         </div>
 
         <div class="col-md-6">
@@ -63,7 +84,15 @@
         </div>
 
         <div class="col-md-12 center">
-          <pre>{{frame}}</pre>
+          <pre>{{text}}</pre>
+        </div>
+        <div class="col-md-12 center" v-if="gray">
+          <canvas id="gray">
+          </canvas>
+        </div>
+        <div class="col-md-12 center" v-if="colorful">
+          <canvas id="colorful">
+          </canvas>
         </div>
       </div>
     </div>
@@ -79,7 +108,6 @@
     el: '#app',
     data: {
       file: null,
-      videoElem: null,
       video: {
         src: null,
         height: null,
@@ -88,8 +116,12 @@
       },
       running: false,
       charset: '$@B%8&WM#*oahkbdpqwmzcvunxrjft/\\|()1{}[]?-_+~<>i!;:,\"^`\'. ',
-      frame: '',
-      frames: [],
+      text: '',
+      texts: [],
+      gray: true,
+      grayImages: [],
+      colorful: false,
+      colorfulImages: [],
     },
     methods: {
       previewFile(event) {
@@ -98,96 +130,64 @@
       },
       loaded(event) {
         const video = event.target;
-        this.video.height = video.videoHeight;
-        this.video.width = video.videoWidth;
+        this.video.height = video.videoHeight / 10;
+        this.video.width = video.videoWidth / 10;
         this.video.duration = Math.floor(video.duration * 10);
+      },
+      end() {
+        const videoElem = document.getElementById('video');
+        videoElem.pause();
+        this.running = false;
       },
       async process() {
         this.running = true;
-        this.videoElem = document.getElementById('video');
-        this.videoElem.currentTime = 0;
-        const canvas = document.createElement('canvas');
-        canvas.width = this.video.width;
-        canvas.height = this.video.height;
-        const ctx = canvas.getContext('2d');
-        this.videoElem.play();
-        this.frames = [];
-        for (let i = 0; i < this.video.duration; i++) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(this.videoElem, 0, 0, canvas.width, canvas.height);
-          const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const frame = [];
-          let pos = 0;
-          for (let i = 0; i < image.height; i++) {
-            const line = [];
-            for (let j = 0; j < image.width; j++) {
-              const r = image.data[pos++];
-              const g = image.data[pos++];
-              const b = image.data[pos++];
-              const a = image.data[pos++];
-              const y = 0.299 * r + 0.587 * g + 0.114 * b;
-              const char = this.charset[Math.min(Math.ceil((y + 1) / Math.floor(256 / this.charset.length)), this.charset.length) - 1];
-              line.push(char);
-            }
-            frame.push(line.join(''));
+        const videoElem = document.getElementById('video');
+        videoElem.currentTime = 0;
+        videoElem.play();
+        this.texts = [];
+        this.grayImages = [];
+        this.colorfulImages = [];
+        const v2cVideo = new V2CVideo(videoElem, this.video.width, this.video.height, this.charset);
+        for (let i = 0; i < this.video.duration && this.running; i++) {
+          const screenshot = v2cVideo.screenshot(this.gray, this.colorful);
+          this.text = screenshot.text;
+          this.texts.push(this.text);
+          if (this.gray) {
+            const canvasElem = document.getElementById('gray');
+            canvasElem.width = this.video.width * 7;
+            canvasElem.height = this.video.height * 7;
+            const ctx = canvasElem.getContext('2d');
+            ctx.clearRect(0, 0, canvasElem.width, canvasElem.height);
+            ctx.putImageData(screenshot.grayImage, 0, 0);
+            this.grayImages.push(screenshot.grayImage);
           }
-          this.frame = frame.join('\n');
-          this.frames.push(this.frame);
+          if (this.colorful) {
+            const canvasElem = document.getElementById('colorful');
+            canvasElem.width = this.video.width * 7;
+            canvasElem.height = this.video.height * 7;
+            const ctx = canvasElem.getContext('2d');
+            ctx.clearRect(0, 0, canvasElem.width, canvasElem.height);
+            ctx.putImageData(screenshot.colorfulImage, 0, 0);
+          }
           await sleep(100);
         }
         this.running = false;
       },
-      async download() {
-        const a = document.createElement("a");
-        a.style = "display: none";
-        document.body.appendChild(a);
+      downloadText() {
+        downloadText(this.texts);
+      },
+      downloadGray() {
+        downloadGray(this.grayImages);
+      },
+      downloadColorful() {
 
-        const html = `
-<!doctype html>
-<html lang="zh-cn">
-<script>
-  const frames = ${JSON.stringify(this.frames)};
-<\/script>
-<style>
-pre {
-  font-size: 10px;
-  line-height: 7px;
-}
-<\/style>
-<body>
-<pre>
-<\/pre>
-<\/body>
-<script>
-  async function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-  async function play() {
-    const pre = document.querySelector('pre');
-    while (1) {
-      for (frame of frames) {
-        pre.innerText = frame;
-        await sleep(100);
-      }
-    }
-  }
-  play();
-<\/script>
-<\/html>
-`;
-
-        const blob = new Blob([html], { type: "octet/stream" }),
-          url = window.URL.createObjectURL(blob);
-        a.href = url;
-        a.download = 'index.html';
-        a.click();
       }
     }
   })
 </script>
 
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+<script src="js/jquery-3.5.1.slim.min.js"></script>
+<script src="js/popper.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
 
 </html>

@@ -77,7 +77,6 @@
     el: '#app',
     data: {
       file: null,
-      videoElem: null,
       video: {
         src: null,
         height: null,
@@ -127,7 +126,6 @@
         const canvasElem = document.getElementById('canvas');
         canvasElem.width = this.video.width * 7;
         canvasElem.height = this.video.height * 7;
-        const ctx = canvasElem.getContext('2d');
         const v2cVideo = new V2CVideo(videoElem, this.video.width, this.video.height, this.charset);
         while (this.running) {
           const screenshot = v2cVideo.screenshot();
