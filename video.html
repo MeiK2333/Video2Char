@@ -5,8 +5,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <script src="js/vue.js"></script>
-  <script type="text/javascript" src="js/omggif.js"></script>
   <script src="js/v2c.js"></script>
+  <script src="js/LZWEncoder.js"></script>
+  <script src="js/NeuQuant.js"></script>
+  <script src="js/GIFEncoder.js"></script>
   <link rel="stylesheet" href="css/bootstrap.min.css">
   <title>视频转字符画</title>
   <style>
@@ -75,12 +77,13 @@
             HTML</button>
           <button class="btn btn-primary" @click="downloadGray" :disabled="texts.length === 0 || running"
             v-if="gray">下载灰度 GIF</button>
-          <button class="btn btn-primary" @click="downloadText" :disabled="texts.length === 0 || running"
+          <button class="btn btn-primary" @click="downloadColorful" :disabled="texts.length === 0 || running"
             v-if="colorful">下载彩色 GIF</button>
         </div>
 
         <div class="col-md-6">
-          <video v-if="video.src" :src="video.src" @loadedmetadata="loaded" id="video" style="max-width: 100%;"></video>
+          <video v-if="video.src" :src="video.src" @loadedmetadata="loaded" id="video" style="max-width: 100%;"
+            muted></video>
         </div>
 
         <div class="col-md-12 center">
@@ -142,33 +145,26 @@
       async process() {
         this.running = true;
         const videoElem = document.getElementById('video');
-        videoElem.currentTime = 0;
-        videoElem.play();
         this.texts = [];
         this.grayImages = [];
         this.colorfulImages = [];
-        const v2cVideo = new V2CVideo(videoElem, this.video.width, this.video.height, this.charset);
+        const v2cVideo = new V2CVideo(videoElem, this.video.width, this.video.height, this.charset, document.getElementById('gray'), document.getElementById('colorful'));
+        videoElem.currentTime = 0;
+        // videoElem.play();
         for (let i = 0; i < this.video.duration && this.running; i++) {
+          videoElem.pause();
           const screenshot = v2cVideo.screenshot(this.gray, this.colorful);
           this.text = screenshot.text;
           this.texts.push(this.text);
           if (this.gray) {
-            const canvasElem = document.getElementById('gray');
-            canvasElem.width = this.video.width * 7;
-            canvasElem.height = this.video.height * 7;
-            const ctx = canvasElem.getContext('2d');
-            ctx.clearRect(0, 0, canvasElem.width, canvasElem.height);
-            ctx.putImageData(screenshot.grayImage, 0, 0);
-            this.grayImages.push(screenshot.grayImage);
+            const ctx = screenshot.grayImage.getContext('2d');
+            this.grayImages.push(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height));
           }
           if (this.colorful) {
-            const canvasElem = document.getElementById('colorful');
-            canvasElem.width = this.video.width * 7;
-            canvasElem.height = this.video.height * 7;
-            const ctx = canvasElem.getContext('2d');
-            ctx.clearRect(0, 0, canvasElem.width, canvasElem.height);
-            ctx.putImageData(screenshot.colorfulImage, 0, 0);
+            const ctx = screenshot.colorfulImage.getContext('2d');
+            this.colorfulImages.push(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height));
           }
+          videoElem.play();
           await sleep(100);
         }
         this.running = false;
@@ -177,10 +173,10 @@
         downloadText(this.texts);
       },
       downloadGray() {
-        downloadGray(this.grayImages);
+        downloadGIF(this.grayImages);
       },
       downloadColorful() {
-
+        downloadGIF(this.colorfulImages);
       }
     }
   })
