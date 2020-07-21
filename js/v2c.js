@@ -75,15 +75,21 @@ class V2CVideo extends V2C {
   }
 }
 
-let ALPHA_THRESHOLD = 128;
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-function downloadGIF(images) {
+async function downloadGIF(images, callback) {
   const encoder = new GIFEncoder();
   encoder.setRepeat(0);
   encoder.setDelay(100);
   encoder.start();
-  for (const image of images) {
+  const len = images.length;
+  for (let i = 0; i < len; i++) {
+    const image = images[i];
     encoder.addFrame(image, true);
+    callback(i + 1, len);
+    await sleep(1);
   }
   encoder.finish();
   encoder.download("output.gif");
