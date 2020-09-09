@@ -2,14 +2,77 @@
 <html>
 
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <script src="js/vue.js"></script>
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <title>视频转字符画</title>
+  <style>
+    pre {
+      font-size: 10px;
+      line-height: 7px;
+    }
 
+    .col-md-6 {
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+
+    .col-md-12 {
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .btn {
+      margin-bottom: 15px;
+    }
+  </style>
 </head>
 
-<body>
-  <h1>Hello World!</h1>
+<body style="padding-top: 0px;">
+  <div class="album py-5" id="app">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <button class="btn btn-primary" onclick="window.location.href='video.html'">视频转字符画</button>
+          <!-- <button class="btn btn-primary" onclick="window.location.href='camera.html'">相机流转字符画</button> -->
+        </div>
+        <div class="col-md-12">
+          <h3>说明</h3>
+          <li>
+            不支持 IE 浏览器，请使用 Chrome 或 Firefox 等现代浏览器访问。
+          </li>
+          <li>
+            字符集长度最好可以被 256 整除，如：16、32、64、128 等。
+          </li>
+          <li>
+            支持的输入视频文件类型视浏览器而定，最好使用 mp4 格式。
+          </li>
+          <li>
+            因为浏览器限制，生成过程中请不要切换页面，否则浏览器会暂停生成任务。
+          </li>
+          <li>
+            生成卡顿或浏览器卡死请适当降低输出高宽度，彩色 GIF 与灰度 GIF 的资源消耗相同。
+          </li>
+          <li>
+            不同机器、不同浏览器的渲染效果可能有差别。
+          </li>
+          <li>
+            有意见或建议，可以在 <a href="https://github.com/MeiK2333/Video2Char/issues" target="_blank">Github Issues</a> 提出或联系
+            <a href="mailto: meik2333@gmail.com">meik2333@gmail.com</a>，最好不要在 B 站，因为我十天半个月不见得上一次 B 站。
+          </li>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
-<script>
-  window.location.href = 'video.html';
-</script>
+
+<script src="js/jquery-3.5.1.slim.min.js"></script>
+<script src="js/popper.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
 
 </html>
