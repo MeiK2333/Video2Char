@@ -10,31 +10,18 @@
   <script src="js/NeuQuant.js"></script>
   <script src="js/GIFEncoder.js"></script>
   <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/v2c.css">
   <title>视频转字符画</title>
-  <style>
-    pre {
-      font-size: 10px;
-      line-height: 7px;
-    }
+  <script type="application/javascript">
+    var doNotTrack = false;
+    if (!doNotTrack) {
+      window.ga = window.ga || function () { (ga.q = ga.q || []).push(arguments) }; ga.l = +new Date;
+      ga('create', 'UA-107784973-4', 'auto');
 
-    .col-md-6 {
-      margin-top: 5px;
-      margin-bottom: 5px;
+      ga('send', 'pageview');
     }
-
-    .col-md-12 {
-      margin-top: 5px;
-      margin-bottom: 5px;
-    }
-
-    .center {
-      text-align: center;
-    }
-
-    .btn {
-      margin-bottom: 15px;
-    }
-  </style>
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
 </head>
 
 <body style="padding-top: 0px;">
@@ -143,8 +130,8 @@
       },
       loaded(event) {
         const video = event.target;
-        this.video.height = video.videoHeight / 10;
-        this.video.width = video.videoWidth / 10;
+        this.video.height = Math.floor(video.videoHeight / 10);
+        this.video.width = Math.floor(video.videoWidth / 10);
         this.video.duration = Math.floor(video.duration * 10);
       },
       end() {
@@ -159,11 +146,8 @@
         this.grayImages = [];
         this.colorfulImages = [];
         const v2cVideo = new V2CVideo(videoElem, this.video.width, this.video.height, this.charset, document.getElementById('gray'), document.getElementById('colorful'));
-        // videoElem.currentTime = 0;
-        // videoElem.play();
         for (let i = 0; i < this.video.duration && this.running; i++) {
           videoElem.currentTime = 0.1 * i;
-          // videoElem.pause();
           const screenshot = v2cVideo.screenshot(this.gray, this.colorful);
           this.text = screenshot.text;
           this.texts.push(this.text);
@@ -175,7 +159,6 @@
             const ctx = screenshot.colorfulImage.getContext('2d');
             this.colorfulImages.push(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height));
           }
-          // videoElem.play();
           await sleep(100);
         }
         this.running = false;

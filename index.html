@@ -6,31 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <script src="js/vue.js"></script>
   <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/v2c.css">
   <title>视频转字符画</title>
-  <style>
-    pre {
-      font-size: 10px;
-      line-height: 7px;
-    }
+  <script type="application/javascript">
+    var doNotTrack = false;
+    if (!doNotTrack) {
+      window.ga = window.ga || function () { (ga.q = ga.q || []).push(arguments) }; ga.l = +new Date;
+      ga('create', 'UA-107784973-4', 'auto');
 
-    .col-md-6 {
-      margin-top: 5px;
-      margin-bottom: 5px;
+      ga('send', 'pageview');
     }
-
-    .col-md-12 {
-      margin-top: 5px;
-      margin-bottom: 5px;
-    }
-
-    .center {
-      text-align: center;
-    }
-
-    .btn {
-      margin-bottom: 15px;
-    }
-  </style>
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
 </head>
 
 <body style="padding-top: 0px;">
@@ -39,10 +26,10 @@
       <div class="row">
         <div class="col-md-12">
           <button class="btn btn-primary" onclick="window.location.href='video.html'">视频转字符画</button>
-          <!-- <button class="btn btn-primary" onclick="window.location.href='camera.html'">相机流转字符画</button> -->
+          <button class="btn btn-primary" onclick="window.location.href='camera.html'">相机流转字符画</button>
         </div>
         <div class="col-md-12">
-          <h3>说明</h3>
+          <h4>说明</h4>
           <li>
             不支持 IE 浏览器，请使用 Chrome 或 Firefox 等现代浏览器访问。
           </li>
@@ -60,6 +47,12 @@
           </li>
           <li>
             不同机器、不同浏览器的渲染效果可能有差别。
+          </li>
+          <li>
+            相机流转字符画需要相机权限，否则无法使用。
+          </li>
+          <li>
+            所有操作均在本地完成，无需网络。唯一的网络请求为浏览量统计，断网也不影响使用功能。
           </li>
           <li>
             有意见或建议，可以在 <a href="https://github.com/MeiK2333/Video2Char/issues" target="_blank">Github Issues</a> 提出或联系

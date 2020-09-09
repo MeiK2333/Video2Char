@@ -6,27 +6,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <script src="js/vue.js"></script>
   <script src="js/v2c.js"></script>
+  <script src="js/LZWEncoder.js"></script>
+  <script src="js/NeuQuant.js"></script>
+  <script src="js/GIFEncoder.js"></script>
   <link rel="stylesheet" href="css/bootstrap.min.css">
-  <style>
-    pre {
-      font-size: 10px;
-      line-height: 7px;
-    }
+  <link rel="stylesheet" href="css/v2c.css">
+  <title>相机流转字符画</title>
+  <script type="application/javascript">
+    var doNotTrack = false;
+    if (!doNotTrack) {
+      window.ga = window.ga || function () { (ga.q = ga.q || []).push(arguments) }; ga.l = +new Date;
+      ga('create', 'UA-107784973-4', 'auto');
 
-    .col-md-6 {
-      margin-top: 5px;
-      margin-bottom: 5px;
+      ga('send', 'pageview');
     }
-
-    .col-md-12 {
-      margin-top: 5px;
-      margin-bottom: 5px;
-    }
-
-    .center {
-      text-align: center;
-    }
-  </style>
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
 </head>
 
 <body style="padding-top: 0px;">
@@ -47,9 +42,31 @@
             <label>字符集</label>
             <textarea v-model="charset" type="text" class="form-control" :disabled="running"></textarea>
           </div>
+          <div class="form-group form-check">
+            <input class="form-check-input" type="checkbox" v-model="gray" :disabled="running">
+            <label class="form-check-label">
+              灰度 GIF 输出
+            </label>
+          </div>
+          <div class="form-group form-check">
+            <input class="form-check-input" type="checkbox" v-model="colorful" :disabled="running">
+            <label class="form-check-label">
+              彩色 GIF 输出
+            </label>
+          </div>
           <button class="btn btn-primary" @click="process"
             :disabled="running || !video.height || !video.width || !video.src || charset.length === 0">开始</button>
           <button class="btn btn-primary" @click="end" :disabled="!running">完成</button>
+          <button class="btn btn-primary" @click="downloadText" :disabled="texts.length === 0 || running">下载
+            HTML</button>
+          <button class="btn btn-primary" @click="downloadGray" :disabled="texts.length === 0 || running"
+            v-if="gray">下载灰度 GIF</button>
+          <button class="btn btn-primary" @click="downloadColorful" :disabled="texts.length === 0 || running"
+            v-if="colorful">下载彩色 GIF</button>
+          <div class="progress">
+            <div class="progress-bar" :style="`width: ${Math.floor(gifCur / gifCnt * 100)}%`" aria-valuemin="0"
+              aria-valuemax="100">{{Math.floor(gifCur / gifCnt * 100)}}%</div>
+          </div>
         </div>
 
         <div class="col-md-6">
@@ -57,10 +74,14 @@
         </div>
 
         <div class="col-md-12 center">
-          <pre>{{frame}}</pre>
+          <pre>{{text}}</pre>
         </div>
-        <div class="col-md-12 center">
-          <canvas id="canvas">
+        <div class="col-md-12 center" v-if="gray">
+          <canvas id="gray">
+          </canvas>
+        </div>
+        <div class="col-md-12 center" v-if="colorful">
+          <canvas id="colorful">
           </canvas>
         </div>
       </div>
@@ -85,7 +106,14 @@
       },
       running: false,
       charset: '$@B%8&WM#*oahkbdpqwmzcvunxrjft/\\|()1{}[]?-_+~<>i!;:,\"^`\'. ',
-      frame: '',
+      text: '',
+      texts: [],
+      gray: true,
+      grayImages: [],
+      colorful: false,
+      colorfulImages: [],
+      gifCur: 0,
+      gifCnt: 1,
     },
     async mounted() {
       const constraints = {
@@ -105,16 +133,15 @@
       };
     },
     methods: {
-      async start() {
-      },
+      async start() { },
       previewFile(event) {
         this.file = event.target.files[0];
         this.video.src = window.URL.createObjectURL(this.file);
       },
       loaded(event) {
         const video = event.target;
-        this.video.height = video.videoHeight;
-        this.video.width = video.videoWidth;
+        this.video.height = Math.floor(video.videoHeight / 10);
+        this.video.width = Math.floor(video.videoWidth / 10);
         this.video.duration = Math.floor(video.duration * 10);
       },
       async end() {
@@ -123,19 +150,43 @@
       async process() {
         this.running = true;
         const videoElem = document.getElementById('video');
-        const canvasElem = document.getElementById('canvas');
-        canvasElem.width = this.video.width * 7;
-        canvasElem.height = this.video.height * 7;
-        const v2cVideo = new V2CVideo(videoElem, this.video.width, this.video.height, this.charset);
-        while (this.running) {
-          const screenshot = v2cVideo.screenshot();
-          this.frame = screenshot.text;
-          ctx.clearRect(0, 0, canvasElem.width, canvasElem.height);
-          ctx.putImageData(screenshot.colorfulImage, 0, 0);
+        this.texts = [];
+        this.grayImages = [];
+        this.colorfulImages = [];
+        const v2cVideo = new V2CVideo(videoElem, this.video.width, this.video.height, this.charset, document.getElementById('gray'), document.getElementById('colorful'));
+        for (let i = 0; i < this.video.duration && this.running; i++) {
+          const screenshot = v2cVideo.screenshot(this.gray, this.colorful);
+          this.text = screenshot.text;
+          this.texts.push(this.text);
+          if (this.gray) {
+            const ctx = screenshot.grayImage.getContext('2d');
+            this.grayImages.push(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height));
+          }
+          if (this.colorful) {
+            const ctx = screenshot.colorfulImage.getContext('2d');
+            this.colorfulImages.push(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height));
+          }
           await sleep(100);
         }
         this.running = false;
       },
+      downloadText() {
+        downloadText(this.texts);
+      },
+      downloadGray() {
+        const callback = (cur, cnt) => {
+          this.gifCur = cur;
+          this.gifCnt = cnt;
+        }
+        downloadGIF(this.grayImages, callback);
+      },
+      downloadColorful() {
+        const callback = (cur, cnt) => {
+          this.gifCur = cur;
+          this.gifCnt = cnt;
+        }
+        downloadGIF(this.colorfulImages, callback);
+      }
     }
   })
 </script>

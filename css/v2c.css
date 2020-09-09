@@ -1,0 +1,22 @@
+pre {
+    font-size: 10px;
+    line-height: 7px;
+}
+
+.col-md-6 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.col-md-12 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.center {
+    text-align: center;
+}
+
+.btn {
+    margin-bottom: 15px;
+}
