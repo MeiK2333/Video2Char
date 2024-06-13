@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+  <script src="js/vue.js"></script>
+  <script src="js/v2c.js"></script>
+  <script src="js/LZWEncoder.js"></script>
+  <script src="js/NeuQuant.js"></script>
+  <script src="js/GIFEncoder.js"></script>
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/v2c.css" rel="stylesheet">
+  <title>屏幕捕获</title>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-FZ2FSZNF5C"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-FZ2FSZNF5C');
+  </script>
+  <style>
+      body {
+          margin: 0;
+          padding: 0;
+      }
+
+      .mx100 {
+          max-width: 100%;
+          max-height: 100%;
+          width: 100%;
+          height: 100%;
+      }
+  </style>
+</head>
+<body>
+<div class="album" id="app">
+  <div class="container" v-if="!running">
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>缩放比例</label>
+          <input class="form-control" max="1" min="0.1" step="0.1" type="number" v-model="rate">
+        </div>
+
+        <div class="form-group">
+          <label>字符集</label>
+          <textarea class="form-control" type="text" v-model="charset"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>颜色</label>
+          <select v-model="color">
+            <option value="gray">灰度</option>
+            <option value="colorful">彩色</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>帧数</label>
+          <input class="form-control" max="20" min="1" step="1" type="number" v-model="frames">
+        </div>
+      </div>
+    </div>
+
+    <button @click="init" class="btn btn-primary">选择屏幕捕获</button>
+  </div>
+  <div v-else>
+    <video class="mx100" id="video"></video>
+    <canvas class="mx100" id="gray" v-if="color === 'gray'">
+    </canvas>
+    <canvas class="mx100" id="colorful" v-if="color === 'colorful'">
+    </canvas>
+  </div>
+</div>
+</body>
+<script src="js/jquery-3.5.1.slim.min.js"></script>
+<script src="js/popper.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script>
+  const app = new Vue({
+    el: '#app',
+    data: {
+      running: false,
+      color: 'gray',
+      charset: '$@B%8&WM#*oahkbdpqwmzcvunxrjft/\\|()1{}[]?-_+~<>i!;:,\"^`\'. ',
+      rate: 0.1,
+      frames: 10
+    },
+    methods: {
+      async init() {
+        this.running = true;
+        const captureStream =
+          await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+          });
+        const video = document.getElementById('video');
+        video.srcObject = captureStream;
+        video.onloadedmetadata = async (e) => {
+          video.play();
+          const height = video.clientHeight;
+          const width = video.clientWidth;
+          video.style.display = 'none';
+          const v2cVideo = new V2CVideo(video, width * this.rate, height * this.rate, this.charset, document.getElementById('gray'), document.getElementById('colorful'));
+          while (this.running) {
+            v2cVideo.screenshot(this.color === 'gray', this.color === 'colorful');
+            await sleep(1000 / this.frames);
+          }
+        };
+      }
+    },
+  })
+</script>
+</html>
